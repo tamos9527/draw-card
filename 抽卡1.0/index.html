@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三国名将抽卡 - 本地版</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5 url('./images/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #8b0000;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.2em;
+        }
+        .faction-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        #court-btn { background: #4169e1; color: white; }
+        #lords-btn { background: #32cd32; color: white; }
+        #rebel-btn { background: #ff4500; color: white; }
+        button:disabled {
+            background: #ccc !important;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .result-container {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s;
+        }
+        .result-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .char-image {
+            width: 100%;
+            max-width: 260px;
+            height: 360px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 3px solid #d4af37;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .char-name {
+            font-size: 22px;
+            margin: 8px 0;
+            color: #222;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .faction-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            color: white;
+            margin: 5px 0;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .court-badge { background: #4169e1; }
+        .lords-badge { background: #32cd32; }
+        .rebel-badge { background: #ff4500; }
+        .char-desc {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.5;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+            width: 100%;
+        }
+        .counters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+        .counter {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
+        .watermark {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8em; }
+            button { padding: 10px 20px; }
+            .char-image { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>⚔️ 三国名将抽卡 ⚔️</h1>
+    
+    <div class="faction-buttons">
+        <button id="court-btn" onclick="drawCard('a')">朝廷</button>
+        <button id="lords-btn" onclick="drawCard('b')">诸侯</button>
+        <button id="rebel-btn" onclick="drawCard('c')">黄巾</button>
+    </div>
+
+    <div class="result-container">
+        <div class="result-card" id="resultContainer">
+            <!-- 内容由JS动态生成 -->
+        </div>
+    </div>
+
+    <div class="counters">
+        <div class="counter">朝廷：<span id="court-count">6</span></div>
+        <div class="counter">诸侯：<span id="lords-count">6</span></div>
+        <div class="counter">黄巾：<span id="rebel-count">6</span></div>
+    </div>
+
+    <div class="watermark">本地版 - 图片存放在images文件夹内</div>
+
+    <script>
+        // ======== 配置区 ======== //
+        const IMAGE_CONFIG = {
+            // 必需图片
+            DEFAULT: "./images/default-card.jpg",
+            READY: "./images/ready-to-draw.jpg",
+            
+            // 武将图片（可选）
+            CHARACTERS: {
+                "皇甫嵩": "./images/huangfusong.jpg",
+                "朱儁": "./images/zhujun.jpg",
+                "卢植": "./images/luzhi.jpg",
+                "汉灵帝": "./images/lingdi.jpg",
+                "何太后": "./images/empress.jpg",
+                "曹操": "./images/caocao.jpg",
+                "马腾": "./images/mateng.jpg",
+                "孙坚": "./images/sunjian.jpg",
+                "公孙瓒": "./images/gongsun.jpg",
+                "韩遂": "./images/hansui.jpg",
+                "袁绍": "./images/yuanshao.jpg",
+                "张角": "./images/zhangjiao.jpg",
+                "张宝": "./images/zhangbao.jpg",
+                "张梁": "./images/zhangliang.jpg",
+                "程远志": "./images/chengyuanzhi.jpg",
+                "邓茂": "./images/dengmao.jpg",
+                "周仓": "./images/zhoucang.jpg"
+            },
+            
+            // 背景图（可选）
+            BACKGROUND: "./images/background.jpg"
+        };
+
+        // ======== 游戏数据 ======== //
+        const allCharacters = [
+            { name: "皇甫嵩", factions: ['a'], desc: "东汉名将，镇压黄巾起义的主力将领" },
+            { name: "朱儁", factions: ['a'], desc: "与皇甫嵩齐名的朝廷大将，战功赫赫" },
+            { name: "卢植", factions: ['a'], desc: "文武全才，刘备与公孙瓒的老师" },
+            { name: "汉灵帝", factions: ['a'], desc: "东汉皇帝，在位期间卖官鬻爵" },
+            { name: "何太后", factions: ['a'], desc: "汉少帝之母，宫廷斗争的牺牲品" },
+            { name: "曹操", factions: ['a','b'], desc: "治世之能臣，乱世之奸雄" },
+            { name: "马腾", factions: ['b'], desc: "西凉豪强，马超之父" },
+            { name: "孙坚", factions: ['b'], desc: "江东猛虎，吴国奠基人" },
+            { name: "公孙瓒", factions: ['b'], desc: "白马将军，威震北疆" },
+            { name: "韩遂", factions: ['b'], desc: "西凉军阀，与马腾结为异姓兄弟" },
+            { name: "袁绍", factions: ['b'], desc: "四世三公，曾为诸侯盟主" },
+            { name: "张角", factions: ['c'], desc: "大贤良师，太平道创始人" },
+            { name: "张宝", factions: ['c'], desc: "地公将军，擅长妖术" },
+            { name: "张梁", factions: ['c'], desc: "人公将军，勇猛善战" },
+            { name: "程远志", factions: ['c'], desc: "黄巾先锋，被关羽斩杀" },
+            { name: "邓茂", factions: ['c'], desc: "黄巾副将，被张飞杀死" },
+            { name: "周仓", factions: ['c'], desc: "忠勇之士，关羽的随从" }
+        ];
+
+        // ======== 游戏逻辑 ======== //
+        let availableCharacters = [...allCharacters];
+        const factionSettings = {
+            'a': { btnId: 'court-btn', badgeClass: 'court-badge', name: '朝廷', countEl: 'court-count' },
+            'b': { btnId: 'lords-btn', badgeClass: 'lords-badge', name: '诸侯', countEl: 'lords-count' },
+            'c': { btnId: 'rebel-btn', badgeClass: 'rebel-badge', name: '黄巾', countEl: 'rebel-count' }
+        };
+
+        // 图片检查函数
+        function checkImage(path) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.src = path;
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                setTimeout(() => resolve(false), 1000); // 超时判断
+            });
+        }
+
+        // 初始化准备界面
+        async function initReadyScreen() {
+            let readyImage = IMAGE_CONFIG.READY;
+            const readyImageExists = await checkImage(readyImage);
+            
+            if (!readyImageExists) {
+                console.warn(`准备界面图片不存在: ${readyImage}, 使用默认图片`);
+                readyImage = IMAGE_CONFIG.DEFAULT;
+            }
+
+            document.getElementById('resultContainer').innerHTML = `
+                <img class="char-image" src="${readyImage}" alt="准备抽卡">
+                <div class="char-name">准备抽卡</div>
+                <div class="faction-badge" style="display:none;">势力</div>
+                <div class="char-desc">选择您想抽取的势力<br>每位武将仅可出现一次</div>
+            `;
+        }
+
+        // 更新剩余计数
+        function updateCounts() {
+            for (const faction in factionSettings) {
+                const count = availableCharacters.filter(char => 
+                    char.factions.includes(faction) && 
+                    !(char.name === "曹操" && char.finalFaction && char.finalFaction !== faction)
+                ).length;
+                document.getElementById(factionSettings[faction].countEl).textContent = count;
+                document.getElementById(factionSettings[faction].btnId).disabled = count === 0;
+            }
+        }
+
+        // 抽卡主逻辑
+        async function drawCard(faction) {
+            const pool = availableCharacters.filter(char => 
+                char.factions.includes(faction) &&
+                !(char.name === "曹操" && char.finalFaction)
+            );
+            
+            if (pool.length === 0) return;
+            
+            const selectedChar = pool[Math.floor(Math.random() * pool.length)];
+            
+            // 处理曹操双势力问题
+            if (selectedChar.name === "曹操") {
+                selectedChar.finalFaction = faction;
+                const otherFaction = faction === 'a' ? 'b' : 'a';
+                const otherChar = availableCharacters.find(c => c.name === "曹操" && c.factions.includes(otherFaction));
+                if (otherChar) availableCharacters = availableCharacters.filter(c => c !== otherChar);
+            }
+            
+            availableCharacters = availableCharacters.filter(c => c !== selectedChar);
+            await renderCard(selectedChar, faction);
+            updateCounts();
+        }
+
+        // 渲染卡牌
+        async function renderCard(char, faction) {
+            const finalFaction = char.finalFaction || faction;
+            const factionInfo = factionSettings[finalFaction];
+            
+            let charImage = IMAGE_CONFIG.CHARACTERS[char.name] || IMAGE_CONFIG.DEFAULT;
+            const charImageExists = await checkImage(charImage);
+            
+            if (!charImageExists) {
+                console.warn(`角色图片不存在: ${charImage}, 使用默认图片`);
+                charImage = IMAGE_CONFIG.DEFAULT;
+            }
+
+            document.getElementById('resultContainer').innerHTML = `
+                <img class="char-image" 
+                     src="${charImage}" 
+                     alt="${char.name}"
+                     onerror="this.src='${IMAGE_CONFIG.DEFAULT}'">
+                <div class="char-name">${char.name}</div>
+                <div class="faction-badge ${factionInfo.badgeClass}">${factionInfo.name}势力</div>
+                <div class="char-desc">${char.desc}</div>
+            `;
+        }
+
+        // 尝试设置背景图
+        async function initBackground() {
+            const bgExists = await checkImage(IMAGE_CONFIG.BACKGROUND);
+            if (bgExists) {
+                document.body.style.backgroundImage = `url('${IMAGE_CONFIG.BACKGROUND}')`;
+            } else {
+                console.warn("背景图片不存在，使用纯色背景");
+                document.body.style.background = "#f5f5f5";
+            }
+        }
+
+        // 初始化游戏
+        window.onload = async function() {
+            await initBackground();
+            await initReadyScreen();
+            updateCounts();
+        };
+    </script>
+</body>
+</html>
