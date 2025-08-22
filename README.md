@@ -1,2 +1,0 @@
-# draw-card
-chou ka
